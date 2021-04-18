@@ -11,9 +11,20 @@
     {{else}}
     {{ $avatar := (joinStr "" "https://cdn.discordapp.com/avatars/" (toString $msg.Author.ID) "/" $msg.Author ".png") }}
 
+    {{$col := 16777215}}{{/* default color is white */}}
+    {{$p := 0}}
+    {{$r := (getMember $msg.Author).Roles}}
+    {{range .Guild.Roles}}
+      {{if and (in $r .ID) (.Color) (lt $p .Position)}}
+        {{$p = .Position}}
+        {{$col = .Color}}
+      {{end}}
+    {{end}}
+
+
     {{$embedRaw := sdict 
     "description" (joinStr "" "**[Message Link](" (index (index $matches 0) 0) ")  to <#" $msg.ChannelID ">**\n" $msg.Content)
-    "color" 4645612 
+    "color" $col 
     "author" (sdict "name"  $msg.Author.Username "icon_url" ($msg.Author.AvatarURL "64")) 
     "footer" (sdict "text" (joinStr "" "Requested by "  .Message.Author.Username "  | Quote from ")) 
     "timestamp" $msg.Timestamp  }}
