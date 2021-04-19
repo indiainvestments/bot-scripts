@@ -1,0 +1,90 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137), crimelabs786
+  Trigger type: `Regex`
+  Trigger: `\A<#\d{16,}>\z`
+*/ -}}
+{{ $defaultAvatar := "https://discordapp.com/assets/322c936a8c8be1b803cd94861bdfa868.png" }}
+{{ $embedColor := 16777215 }}{{/* Initializing to 0xFFFFFF or white */}}
+{{ $deleteTriggerDelay := 5 }}
+{{ $staffRoleID := 0 }}{{/* get ID of moderator role and replace before running */}}
+
+{{ $trigger := .Message.Content }}
+{{ $hereChannelID := toString .Channel.ID }}
+{{ $thereChannelID := slice $trigger 2 (sub (len $trigger) 1) }}
+
+{{ $thereChannel := getChannel $thereChannelID }}
+{{ $selfLinkCheck := ne $hereChannelID $thereChannelID }}
+{{ $validChannelCheck := ne 0 $thereChannel.LastMessageID }}
+{{ if and $thereChannel $selfLinkCheck $validChannelCheck }}
+    {{ $hereMsgID := sendMessageRetID nil (complexMessage "content" "Loading...") }}
+    {{ $thereMsgID := sendMessageRetID $thereChannelID (complexMessage "content" "Loading...") }}
+
+    {{ $cLinkBaseUrl := "https://discord.com/channels" }}
+    {{ $thereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $thereChannelID "/" $thereMsgID }}
+    {{ $hereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $hereChannelID "/" $hereMsgID }}
+
+    {{ $hereText := "" }}
+    {{ $thereText := "" }}
+    {{ if hasRoleID $staffRoleID }}
+        {{ $hereText = joinStr ""
+            "A staff member has moved this conversation to **#" $thereChannel.Name "**. Please go there now.\n\n"
+            "🔗 [Click or tap here to move.](" $thereLink ")"
+        }}
+        {{ $thereText = joinStr ""
+            "A staff member has moved a conversation from **#" .Channel.Name "** to here.\n\n"
+            "🔗 [Click or tap here to return.](" $hereLink ")"
+        }}
+    {{ else }}
+        {{ $hereText = joinStr ""
+            "A server member has linked to **#" $thereChannel.Name "**.\n\n"
+            "🔗 [Click or tap here to move.](" $thereLink ")"
+        }}
+        {{ $thereText = joinStr ""
+            "A server member has linked from **#" .Channel.Name "** to here.\n\n"
+            "🔗 [Click or tap here to return.](" $hereLink ")"
+        }}
+    {{ end }}
+
+    {{ $title := "Channel Link" }}
+
+    {{ $userFull := .User.Username }}
+    {{ if .Member.Nick }}
+        {{ $userFull = joinStr "" .Member.Nick " (" .User.Username ")" }}
+    {{ end }}
+    {{ $userLink := joinStr "" "https://discordapp.com/users/" .User.ID }}
+    {{ $author := sdict "name" $userFull "url" $userLink "icon_url" (or (.User.AvatarURL "128") $defaultAvatar) }}
+
+    {{$authorColor := 16777215}}
+    {{ $position := 0 }}
+    {{ $roles := .Member.Roles }}
+    {{range .Guild.Roles}}
+        {{if and (in $roles .ID) (.Color) (lt $position .Position)}}
+            {{$position = .Position}}
+            {{$authorColor = .Color}}
+       {{end}}
+    {{end}}
+    {{ if not $authorColor }}
+        {{ $authorColor = $embedColor }}
+    {{ end }}
+
+    {{ editMessage nil $hereMsgID (complexMessageEdit
+        "content" ""
+        "embed" (cembed
+            "title" $title
+            "description" $hereText
+            "color" $authorColor
+            "author" $author
+        )
+    ) }}
+    {{ editMessage $thereChannelID $thereMsgID (complexMessageEdit
+        "content" ""
+        "embed" (cembed
+            "title" $title
+            "description" $thereText
+            "color" $authorColor
+            "author" $author
+        )
+    ) }}
+
+    {{ deleteTrigger $deleteTriggerDelay }}
+{{ end }}
