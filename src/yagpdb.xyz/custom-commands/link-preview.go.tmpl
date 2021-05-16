@@ -13,11 +13,14 @@
 
     {{$col := 16777215}}{{/* default color is white */}}
     {{$p := 0}}
-    {{$r := (getMember $msg.Author).Roles}}
-    {{range .Guild.Roles}}
-      {{if and (in $r .ID) (.Color) (lt $p .Position)}}
-        {{$p = .Position}}
-        {{$col = .Color}}
+    {{$m := getMember $msg.Author.ID}}
+    {{ if $m}}
+      {{$r := $m.Roles}}
+      {{range .Guild.Roles}}
+        {{if and (in $r .ID) (.Color) (lt $p .Position)}}
+          {{$p = .Position}}
+          {{$col = .Color}}
+        {{end}}
       {{end}}
     {{end}}
 
