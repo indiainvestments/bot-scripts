@@ -66,6 +66,8 @@
     {{ if not $authorColor }}
         {{ $authorColor = $embedColor }}
     {{ end }}
+    
+    {{ deleteTrigger $deleteTriggerDelay }}
 
     {{ editMessage nil $hereMsgID (complexMessageEdit
         "content" ""
@@ -86,5 +88,4 @@
         )
     ) }}
 
-    {{ deleteTrigger $deleteTriggerDelay }}
 {{ end }}
